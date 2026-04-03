@@ -10,6 +10,8 @@ app.use(express.text({ limit: '10mb', type: 'text/*' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 const PORT = 3000;
+const DEFAULT_CLIPBOARD_ID = process.env.DEFAULT_CLIPBOARD_ID || 'aconite';
+const DEFAULT_PATH = `/clipboard/${DEFAULT_CLIPBOARD_ID}`;
 
 // Simple in-memory storage (use DB later)
 const clipboardStore = {};
@@ -447,7 +449,7 @@ app.get('/clipboard/:id', (req, res) => {
 
 // Homepage route
 app.get('/', (req, res) => {
-  res.send('Clipboard server is running 🚀');
+  res.redirect(DEFAULT_PATH);
 });
 
 app.use((err, req, res, next) => {
@@ -464,5 +466,5 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://0.0.0.0:${PORT}`);
+  console.log(`Server running on http://0.0.0.0:${PORT}${DEFAULT_PATH}`);
 });
