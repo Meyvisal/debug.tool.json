@@ -146,6 +146,7 @@ app.get('/clipboard/:id', (req, res) => {
   res.send(`
     <html>
       <head>
+        <title>Clipboard Viewer</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
         <style>
           body {
