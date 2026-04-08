@@ -215,8 +215,10 @@ app.get('/clipboard/:id', (req, res) => {
             text-align: center;
             vertical-align: middle;
             line-height: 16px;
+            transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
           }
           .toggle-btn:hover { background: #4a4a4a; }
+          .node.collapsed .toggle-btn { transform: rotate(-90deg); }
           .spacer {
             display: inline-block;
             width: 28px;
@@ -235,6 +237,10 @@ app.get('/clipboard/:id', (req, res) => {
             padding-left: 22px;
             border-left: 1px dashed #444;
             margin-left: 10px;
+          }
+          .anim {
+            overflow: hidden;
+            will-change: height, opacity;
           }
           .section {
             padding: 10px 0;
@@ -299,6 +305,64 @@ app.get('/clipboard/:id', (req, res) => {
 
           function isObject(value) {
             return value !== null && typeof value === 'object' && !Array.isArray(value);
+          }
+
+          function animateHeightFade(el, show, duration) {
+            const ms = typeof duration === 'number' ? duration : 180;
+            const easing = 'cubic-bezier(0.2, 0, 0, 1)';
+            el.getAnimations().forEach((a) => a.cancel());
+
+            if (show) {
+              el.style.display = '';
+              const target = el.scrollHeight;
+              const a = el.animate(
+                [
+                  { height: '0px', opacity: 0 },
+                  { height: target + 'px', opacity: 1 },
+                ],
+                { duration: ms, easing }
+              );
+              a.onfinish = () => {
+                el.style.height = '';
+                el.style.opacity = '';
+              };
+              return;
+            }
+
+            const start = el.scrollHeight;
+            const a = el.animate(
+              [
+                { height: start + 'px', opacity: 1 },
+                { height: '0px', opacity: 0 },
+              ],
+              { duration: ms, easing }
+            );
+            a.onfinish = () => {
+              el.style.display = 'none';
+              el.style.height = '';
+              el.style.opacity = '';
+            };
+          }
+
+          function animateFade(el, show, duration) {
+            const ms = typeof duration === 'number' ? duration : 140;
+            const easing = 'cubic-bezier(0.2, 0, 0, 1)';
+            el.getAnimations().forEach((a) => a.cancel());
+
+            if (show) {
+              el.style.display = '';
+              const a = el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms, easing });
+              a.onfinish = () => {
+                el.style.opacity = '';
+              };
+              return;
+            }
+
+            const a = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing });
+            a.onfinish = () => {
+              el.style.display = 'none';
+              el.style.opacity = '';
+            };
           }
 
           function buildNode(key, value, isLast) {
@@ -383,14 +447,26 @@ app.get('/clipboard/:id', (req, res) => {
             if (!isLast) footer.appendChild(span('comma', ','));
             wrapper.appendChild(footer);
 
+            children.classList.add('anim');
+            footer.classList.add('anim');
+
             let expanded = true;
             btn.addEventListener('click', () => {
               expanded = !expanded;
               btn.textContent = expanded ? '-' : '+';
-              children.style.display = expanded ? '' : 'none';
-              footer.style.display = expanded ? '' : 'none';
-              summary.style.display = expanded ? 'none' : '';
-              collapsedClose.style.display = expanded ? 'none' : '';
+              wrapper.classList.toggle('collapsed', !expanded);
+
+              if (expanded) {
+                animateFade(summary, false);
+                animateFade(collapsedClose, false);
+                animateHeightFade(children, true);
+                animateHeightFade(footer, true);
+              } else {
+                animateHeightFade(children, false);
+                animateHeightFade(footer, false);
+                animateFade(summary, true);
+                animateFade(collapsedClose, true);
+              }
             });
 
             return wrapper;
