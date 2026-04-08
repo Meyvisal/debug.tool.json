@@ -19,6 +19,7 @@ const clipboardStore = {};
 // 👉 Save clipboard
 app.post('/api/clipboard/:id', (req, res) => {
   const { id } = req.params;
+  const existing = clipboardStore[id];
   let content;
   let content_type;
 
@@ -35,17 +36,36 @@ app.post('/api/clipboard/:id', (req, res) => {
     }
   }
 
-  if (content === undefined || content === null || content === '') {
+  const isEmptyString = typeof content === 'string' && content.trim() === '';
+  if (content === undefined || content === null || isEmptyString) {
+    if (existing) return res.json({ id, updated: false, cached: true });
     return res.status(400).json({ error: 'Content required' });
+  }
+
+  let signature;
+  if (typeof content === 'string') {
+    signature = content;
+  } else {
+    try {
+      signature = JSON.stringify(content);
+    } catch (_) {
+      signature = String(content);
+    }
+  }
+
+  if (existing && existing.signature === signature && (existing.content_type || 'text/plain') === (content_type || 'text/plain')) {
+    return res.json({ id, updated: false, cached: true });
   }
 
   clipboardStore[id] = {
     content,
     content_type: content_type || 'text/plain',
-    createdAt: new Date(),
+    signature,
+    createdAt: existing && existing.createdAt ? existing.createdAt : new Date(),
+    updatedAt: new Date(),
   };
 
-  res.json({ id });
+  res.json({ id, updated: true });
 });
 
 // parse safely
